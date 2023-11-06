@@ -1,0 +1,45 @@
+1) CREATE CONSTRAINT FOR (a:Article) REQUIRE a.id IS UNIQUE
+
+2)LOAD CSV FROM'file:///ArticleNodes.csv' AS articles_csv
+FIELDTERMINATOR ','
+CREATE (a:Article{id:toInteger(articles_csv[0]), title:articles_csv[1], year:articles_csv[2], abstract:articles_csv[4]})
+
+3)CREATE CONSTRAINT FOR (j:Journal) REQUIRE j.name IS UNIQUE
+
+4)LOAD CSV FROM'file:///ArticleNodes.csv' AS articles_csv
+FIELDTERMINATOR ','
+WITH articles_csv
+WHERE articles_csv[3] IS NOT NULL 
+MERGE (j:Journal{name: articles_csv[3]})
+ON MATCH SET j.id=toInteger(articles_csv[0])
+
+5)CREATE CONSTRAINT FOR (au:Author) REQUIRE au.name IS UNIQUE
+
+6)LOAD CSV FROM'file:///AuthorNodes.csv' AS authors_csv
+FIELDTERMINATOR ','
+MERGE (au:Author{name:authors_csv[1]})
+ON MATCH SET au.id=toInteger(authors_csv[0])
+
+
+7)LOAD CSV FROM "file:///ArticleNodes.csv" AS articles_csv
+MATCH (a:Article), (j:Journal)
+WHERE a.id = toInteger(articles_csv[0]) AND j.name = articles_csv[3]
+CREATE (a) - [r:PUBLISHED_IN] -> (j)
+
+8)LOAD CSV FROM "file:///AuthorNodes.csv" AS author_csv 
+FIELDTERMINATOR ','
+MATCH (a:Article {id: toInteger(author_csv[0])}) 
+MATCH (au:Author {name: author_csv[1]}) 
+MERGE (a)-[:WRITTEN_BY]->(au)
+
+9)LOAD CSV FROM "file:///Citations.csv" AS citations 
+FIELDTERMINATOR '\t'
+MATCH (a1:Article {id: toInteger(citations[0])}) 
+MATCH (a2:Article {id: toInteger(citations[1])}) 
+MERGE (a1)-[:CITES]->(a2)
+
+
+10)call db.schema.visualization()
+
+
+11)MATCH p=()-[*]->() RETURN p LIMIT 25

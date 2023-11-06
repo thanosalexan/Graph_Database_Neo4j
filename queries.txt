@@ -1,0 +1,55 @@
+1)MATCH (a1:Article)-[r:CITES]->(a2:Article)-[:WRITTEN_BY]->(au:Author)
+RETURN au.name AS Author_name, COUNT(r) AS Number_of_Citations
+ORDER BY Number_of_Citations DESC
+LIMIT 5 
+
+2)MATCH(a:Article)-[:WRITTEN_BY]->(au:Author),(a:Article)-[:WRITTEN_BY]->(auth:Author)
+WHERE au.name<>auth.name
+RETURN au.name AS Author_name, COUNT(DISTINCT auth) AS Number_of_Collaborations
+ORDER BY Number_of_Collaborations DESC
+LIMIT 5
+
+3) MATCH (ar:Article)-[:WRITTEN_BY]->(au:Author)
+WHERE NOT EXISTS {
+  MATCH (:Author)<-[:WRITTEN_BY]-(:Article)-[:WRITTEN_BY]->(au)
+}
+WITH au, COUNT(ar) AS Number_of_Papers
+RETURN au.name AS Author, Number_of_Papers
+ORDER BY Number_of_Papers DESC
+LIMIT 1
+
+4) MATCH(a:Article)-[w:WRITTEN_BY]->(au:Author)
+WHERE a.year='2001'
+RETURN au.name AS Author_name, COUNT(DISTINCT a) AS Number_of_Papers
+ORDER BY Number_of_Papers DESC
+LIMIT 1
+
+5) MATCH(a:Article)-[r:PUBLISHED_IN]->(j:Journal)
+WHERE a.year='1998' AND toLower(a.title) CONTAINS 'gravity'
+RETURN j.name AS Journal_name, COUNT(DISTINCT a) AS Number_of_Papers
+ORDER BY Number_of_Papers DESC
+LIMIT 1
+
+6) MATCH (a1:Article)-[r:CITES]->(a2:Article)
+RETURN a2.title AS Author_name, COUNT(r) AS Number_of_Citations
+ORDER BY Number_of_Citations DESC
+LIMIT 5 
+
+7)MATCH(a:Article)-[w:WRITTEN_BY]->(au:Author)
+WHERE toLower(a.abstract) CONTAINS "holography" AND toLower(a.abstract) CONTAINS "anti de sitter"
+RETURN a.title AS paper_title, au.name AS Author_name
+
+8) MATCH path = shortestPath((a1:Author {name: 'C.N. Pope'})-[*]-(a2:Author {name: 'M. Schweda'}))
+RETURN path AS shortestPath, length(path) AS pathLength
+
+9)MATCH path = shortestPath((a1:Author {name: 'C.N. Pope'})-[w:WRITTEN_BY*]-(a2:Author {name: 'M. Schweda'}))
+RETURN path AS shortestPath, length(path) AS pathLength
+
+10) MATCH p = ShortestPath((auth:Author {name:'Edward Witten'})-[w:WRITTEN_BY*]-(auth2:Author))
+WHERE auth <> auth2
+AND NONE(j IN nodes(p) WHERE j:Journal)
+WITH auth2, p, length(p) AS Path_Length
+WHERE Path_Length > 25
+RETURN auth2.name AS Author_Name,  Path_Length,
+       [n IN nodes(p) WHERE n.title IS NOT NULL | n.title] AS       Paper_Titles
+ORDER BY Path_Length DESC
